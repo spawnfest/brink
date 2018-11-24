@@ -4,7 +4,7 @@ defmodule Brink.Mixfile do
   def project do
     [
       app: :brink,
-      version: "0.1.2",
+      version: "0.1.3",
       elixir: "~> 1.7",
       package: package(),
       deps: deps()
