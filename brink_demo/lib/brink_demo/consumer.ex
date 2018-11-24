@@ -18,6 +18,7 @@ defmodule BrinkDemo.Consumer do
            name: :"Blink.Producer-#{consumer}",
            redis_uri: redis_uri,
            stream: stream,
+           mode: :group,
            group: group,
            consumer: consumer
          ]}
