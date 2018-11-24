@@ -2,7 +2,7 @@ defmodule Brink.Producer do
   use GenStage
 
   @moduledoc """
-  The Brink.Producer is a GenStage consumer that produces events to a Redis
+  Brink.Producer is a GenStage consumer that produces events to a Redis
   Stream. It can be used, with one or more processes, as a sink for
   Flow.into_stages/Flow.into_specs .
   """
@@ -27,13 +27,17 @@ defmodule Brink.Producer do
           client
       end
 
-    state = %{
-      client: redis_client,
-      stream: Keyword.get(options, :stream, "brink"),
-      maxlen: Keyword.get(options, :maxlen)
-    }
+    with {:ok, stream} <- Keyword.fetch(options, :stream) do
+      state = %{
+        client: redis_client,
+        stream: stream,
+        maxlen: Keyword.get(options, :maxlen)
+      }
 
-    {:consumer, state}
+      {:consumer, state}
+    else
+      _ -> {:stop, "Missing arguments"}
+    end
   end
 
   def handle_events(events, _from, state) do
@@ -45,6 +49,7 @@ defmodule Brink.Producer do
   defp build_xadd(stream, dict, maxlen) when is_map(dict) do
     build_xadd(stream, Map.to_list(dict), maxlen)
   end
+
   defp build_xadd(stream, dict, maxlen) when is_list(dict) do
     dict_args =
       dict
