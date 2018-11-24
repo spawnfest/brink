@@ -5,7 +5,8 @@ defmodule Brink.Mixfile do
     [
       app: :brink,
       version: "0.1.0",
-      elixir: "~> 1.5",
+      elixir: "~> 1.7",
+      package: package(),
       deps: deps()
     ]
   end
@@ -13,6 +14,14 @@ defmodule Brink.Mixfile do
   def application do
     [
       extra_applications: [:logger]
+    ]
+  end
+
+  defp package do
+    [
+      description: "Elixir GenStage front-end for Redis Streams",
+      licenses: ["MIT"],
+      links: %{"GitHub" => "https://github.com/spawnfest/team-brb/"}
     ]
   end
 
