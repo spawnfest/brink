@@ -18,7 +18,7 @@ defmodule Brink.Mixfile do
 
   defp deps do
     [
-      {:flow, "~> 0.14"},
+      {:flow, "~> 0.14", only: [:dev]},
       {:gen_stage, "~> 0.14"},
       {:redix, "~> 0.9.0"}
     ]
