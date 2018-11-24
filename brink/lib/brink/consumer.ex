@@ -11,10 +11,12 @@ defmodule Brink.Consumer do
   """
 
   # Known debt:
+  # - Redix linked simplistically and possibly not closed properly.
   # - The code deals with pending messages from previous runs, but the code
   #   doesn't really allow for pending messages to be created because it's
   #   using NOACK. We should find a way to track processing of messages to
   #   XACK them properly only once they've been processed.
+  # - The code should support a non-group XREAD mode for simpler usage.
 
   def start_link(options \\ []) do
     GenStage.start_link(__MODULE__, options, name: Keyword.get(options, :name, __MODULE__))
@@ -77,14 +79,7 @@ defmodule Brink.Consumer do
 
     case Redix.command(state.client, read_command) do
       {:ok, [[^stream, [_ | _] = events]]} ->
-        next_id =
-          if state.next_id == ">" do
-            ">"
-          else
-            events
-            |> Enum.map(&List.first/1)
-            |> List.last()
-          end
+        next_id = pick_next_id(state.next_id, events)
 
         new_state = %{state | demand: state.demand - length(events), next_id: next_id}
 
@@ -92,12 +87,14 @@ defmodule Brink.Consumer do
           poll_stream(state.poll_interval)
         end
 
-        {:noreply, events, new_state}
+        formatted_events = Enum.map(events, &format_event/1)
 
-      {:ok, no} ->
+        {:noreply, formatted_events, new_state}
+
+      {:ok, _} ->
         poll_stream(state.poll_interval)
         # If no events were found, there are definitely no pending messages.
-        new_state = %{state | next_id: ">"}
+        new_state = %{state | next_id: pick_next_id(state.next_id, [])}
         {:noreply, [], new_state}
 
       {:error, err} ->
@@ -122,5 +119,27 @@ defmodule Brink.Consumer do
       state.stream,
       state.next_id
     ]
+  end
+
+  defp pick_next_id(_previous_next_id, []), do: ">"
+
+  defp pick_next_id(previous_next_id, events) do
+    if previous_next_id == ">" do
+      ">"
+    else
+      events
+      |> Enum.map(&List.first/1)
+      |> List.last()
+    end
+  end
+
+  defp format_event([id, dict]) do
+    dict =
+      dict
+      |> Enum.chunk_every(2)
+      |> Enum.map(fn [k, v] -> {:"#{k}", v} end)
+      |> Map.new()
+
+    {id, dict}
   end
 end
