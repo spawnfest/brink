@@ -8,15 +8,24 @@ defmodule Brink.Producer do
   """
 
   # Known debt:
-  # - Redix linked simplistically and not closed
+  # - Redix linked simplistically and possibly not closed
+  # - Not handling resubscriptions as required by Flow?
 
-  def init(options) do
-    redis_client = Keyword.get(options, :redis_client)
+  def start_link(options \\ []) do
+    GenStage.start_link(__MODULE__, options, name: __MODULE__)
+  end
 
-    if not redis_client do
-      redis_uri = Keyword.get(options, :redis_uri, "redis://localhost")
-      {:ok, redis_client} = Redix.start_link(redis_uri)
-    end
+  def init(options \\ []) do
+    redis_client =
+      case Keyword.get(options, :redis_client) do
+        nil ->
+          redis_uri = Keyword.get(options, :redis_uri, "redis://localhost")
+          {:ok, client} = Redix.start_link(redis_uri)
+          client
+
+        client ->
+          client
+      end
 
     state = %{
       client: redis_client,
@@ -24,7 +33,7 @@ defmodule Brink.Producer do
       maxlen: Keyword.get(options, :maxlen)
     }
 
-    {:consumer, :some_kind_of_state}
+    {:consumer, state}
   end
 
   def handle_events(events, _from, state) do
@@ -33,10 +42,9 @@ defmodule Brink.Producer do
     {:noreply, [], state}
   end
 
-  defp build_xadd(dict, maxlen) when is_map(dict) do
-    build_xadd(Map.to_list(dict), maxlen)
+  defp build_xadd(stream, dict, maxlen) when is_map(dict) do
+    build_xadd(stream, Map.to_list(dict), maxlen)
   end
-
   defp build_xadd(stream, dict, maxlen) when is_list(dict) do
     dict_args =
       dict
