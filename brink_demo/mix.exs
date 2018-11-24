@@ -20,8 +20,9 @@ defmodule BrinkDemo.MixProject do
 
   defp deps do
     [
-      {:brink, path: "../brink"},
-      {:distillery, "~> 2.0", runtime: false}
+      {:brink, ">= 0.0.0"},
+      {:distillery, "~> 2.0", runtime: false},
+      {:flow, "~> 0.14"}
     ]
   end
 end
