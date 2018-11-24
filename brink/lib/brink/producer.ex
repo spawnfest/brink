@@ -11,7 +11,7 @@ defmodule Brink.Producer do
   # - Redix linked simplistically and possibly not closed properly.
 
   def start_link(options \\ []) do
-    GenStage.start_link(__MODULE__, options, name: __MODULE__)
+    GenStage.start_link(__MODULE__, options, name: Keyword.get(options, :name, __MODULE__))
   end
 
   def init(options \\ []) do
