@@ -20,7 +20,8 @@ defmodule BrinkDemo.Consumer do
            stream: stream,
            mode: :group,
            group: group,
-           consumer: consumer
+           consumer: consumer,
+           mode: :group
          ]}
       ],
       window: Flow.Window.periodic(3, :second)

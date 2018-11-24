@@ -1,7 +1,7 @@
   #########
   # BUILD #
   #########
-FROM bitwalker/alpine-elixir:1.7.4 as build
+FROM beardedeagle/alpine-elixir-builder:1.7 as build
 COPY brink ./brink
 RUN mkdir brink_demo
 WORKDIR ./brink_demo
@@ -12,6 +12,7 @@ COPY brink_demo/mix.lock .
 RUN export MIX_ENV=prod && \
   mix deps.get && \
   mix deps.compile
+RUN ls .
 COPY brink_demo/lib ./lib
 RUN export MIX_ENV=prod && \
   mix release
