@@ -11,7 +11,6 @@ defmodule Brink.Consumer do
   """
 
   # Known debt:
-  # - Redix linked simplistically and possibly not closed properly.
   # - The code deals with pending messages from previous runs, but the code
   #   doesn't really allow for pending messages to be created because it's
   #   using NOACK. We should find a way to track processing of messages to
@@ -37,13 +36,14 @@ defmodule Brink.Consumer do
     mode = Keyword.get(options, :mode, :single)
 
     with {:ok, stream} <- Keyword.fetch(options, :stream),
-         {:ok, mode_state} <- parse_mode_options(mode, options) do
+         {:ok, mode_state} <- parse_mode_options(mode, options),
+           poll_interval <- Keyword.get(options, :poll_interval, 100) do
       state = %{
         client: redis_client,
         stream: stream,
         mode: mode,
         demand: 0,
-        poll_interval: Keyword.get(options, :poll_interval, 100)
+        poll_interval: poll_interval
       }
 
       producer_options =

@@ -7,9 +7,6 @@ defmodule Brink.Producer do
   Flow.into_stages/Flow.into_specs .
   """
 
-  # Known debt:
-  # - Redix linked simplistically and possibly not closed properly.
-
   def start_link(options \\ []) do
     GenStage.start_link(__MODULE__, options, name: Keyword.get(options, :name, __MODULE__))
   end
@@ -26,11 +23,12 @@ defmodule Brink.Producer do
           client
       end
 
-    with {:ok, stream} <- Keyword.fetch(options, :stream) do
+    with {:ok, stream} <- Keyword.fetch(options, :stream),
+         maxlen <- Keyword.get(options, :maxlen) do
       state = %{
         client: redis_client,
         stream: stream,
-        maxlen: Keyword.get(options, :maxlen)
+        maxlen: maxlen
       }
 
       {:consumer, state}
