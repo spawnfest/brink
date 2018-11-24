@@ -9,7 +9,7 @@ defmodule Brink.Producer do
 
   # Known debt:
   # - Redix linked simplistically and possibly not closed
-  # - Not handling resubscriptions as required by Flow?
+  # - Honestly not sure what happens with demand
 
   def start_link(options \\ []) do
     GenStage.start_link(__MODULE__, options, name: __MODULE__)
