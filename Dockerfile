@@ -1,7 +1,7 @@
   #########
   # BUILD #
   #########
-FROM bitwalker/alpine-elixir:1.7.4 as build
+FROM beardedeagle/alpine-elixir-builder:1.7 as build
 COPY brink ./brink
 RUN mkdir brink_demo
 WORKDIR ./brink_demo
