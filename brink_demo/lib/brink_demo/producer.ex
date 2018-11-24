@@ -7,7 +7,11 @@ defmodule BrinkDemo.Producer do
 
     Stream.repeatedly(&:rand.uniform/0)
     |> Flow.from_enumerable()
-    |> Flow.map(&%{now: DateTime.to_unix(DateTime.utc_now(), :millisecond), value: round(&1 * 10_000)})
-    |> Flow.into_specs([{{Brink.Producer, [redis_uri: redis_uri, stream: stream, maxlen: 20_000]}, []}])
+    |> Flow.map(
+      &%{now: DateTime.to_unix(DateTime.utc_now(), :millisecond), value: round(&1 * 10_000)}
+    )
+    |> Flow.into_specs([
+      {{Brink.Producer, [redis_uri: redis_uri, stream: stream, maxlen: 20_000]}, []}
+    ])
   end
 end

@@ -15,6 +15,7 @@ defmodule BrinkDemo.Tailer do
   def handle_info(:timeout, {interval, client, stream} = state) do
     Redix.command!(client, ["XREVRANGE", stream, "+", "-", "COUNT", "10"])
     |> IO.inspect()
+
     {:noreply, state, interval}
   end
 end
