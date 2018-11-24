@@ -8,14 +8,19 @@ defmodule Brink.Consumer do
   consumer part of a consumer group. It is important to have unique names
   for consumers and it's important to restart a consumer after a crash with
   the same name so that unprocessed messages will be retries.
-  """
 
-  # Known debt:
-  # - The code deals with pending messages from previous runs, but the code
-  #   doesn't really allow for pending messages to be created because it's
-  #   using NOACK. We should find a way to track processing of messages to
-  #   XACK them properly only once they've been processed.
-  # - The code should support multiple streams being tracked individually.
+  It supports two modes:
+  1. In `:single` mode the consumer will iterate over a stream's history from
+  `:start_id` and will continue as new events are added to the stream. If
+  `:start_id` is set to "$" (the default value) then instead it'll wait for the
+  next event and then continue processing the stream from that event.
+  2. In `:group` mode the consumer will use Redis Streams' consumer groups
+  feature to read new events that weren't read by other consumers in the same
+  group. Right now all read messages are immediately acknowledged (using NOACK)
+  but in an explicit-acknowledgement reading mode, when the consumer starts it
+  will first go over unacknowledged events it has previously read before asking
+  for new events, to make sure that they are processed.
+  """
 
   def start_link(options \\ []) do
     GenStage.start_link(__MODULE__, options, name: Keyword.get(options, :name, __MODULE__))
@@ -37,7 +42,7 @@ defmodule Brink.Consumer do
 
     with {:ok, stream} <- Keyword.fetch(options, :stream),
          {:ok, mode_state} <- parse_mode_options(mode, options),
-           poll_interval <- Keyword.get(options, :poll_interval, 100) do
+         poll_interval <- Keyword.get(options, :poll_interval, 100) do
       state = %{
         client: redis_client,
         stream: stream,
@@ -62,14 +67,13 @@ defmodule Brink.Consumer do
   end
 
   defp parse_mode_options(:single, options) do
-    with {:ok, start_id} <- Keyword.fetch(options, :start_id) do
+    with start_id <- Keyword.get(options, :start_id, "$"),
+         initial_block_timeout <- Keyword.get(options, :initial_block_timeout, 10_000) do
       {:ok,
        %{
          next_id: start_id,
-         initial_block_timeout: Keyword.get(options, :initial_block_timeout, 1_000)
+         initial_block_timeout: initial_block_timeout
        }}
-    else
-      _ -> {:error, :badarg}
     end
   end
 
