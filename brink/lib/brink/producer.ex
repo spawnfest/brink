@@ -8,8 +8,7 @@ defmodule Brink.Producer do
   """
 
   # Known debt:
-  # - Redix linked simplistically and possibly not closed
-  # - Honestly not sure what happens with demand
+  # - Redix linked simplistically and possibly not closed properly.
 
   def start_link(options \\ []) do
     GenStage.start_link(__MODULE__, options, name: __MODULE__)
@@ -39,6 +38,9 @@ defmodule Brink.Producer do
       _ -> {:stop, "Missing arguments"}
     end
   end
+
+  # ignoring incoming messages to clear mailbox
+  def handle_info(_, state), do: {:noreply, [], state}
 
   def handle_events(events, _from, state) do
     commands = Enum.map(events, &build_xadd(state.stream, &1, state.maxlen))
