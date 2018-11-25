@@ -9,15 +9,13 @@ defmodule BrinkDemo.Consumer do
 
     Flow.from_specs(
       [
-        {Brink.Consumer,
-         [
-           name: :"Blink.Producer-#{consumer}",
-           redis_uri: redis_uri,
-           stream: stream,
-           mode: :group,
-           group: group,
-           consumer: consumer
-         ]}
+        Brink.Consumer.build_spec_group_mode(
+          redis_uri,
+          stream,
+          group,
+          name: :"Brink.Producer-#{consumer}",
+          consumer: consumer
+        )
       ],
       window: Flow.Window.periodic(3, :second)
     )

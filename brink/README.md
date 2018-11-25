@@ -36,10 +36,11 @@ your_function_returning_a_Stream
 |> Flow.from_enumerable()
 |> Flow.your_flow_functions(...)
 |> Flow.into_specs([
-     {{Brink.Producer,
-       [redis_uri: "redis://localhost:6796",
-        stream: "redis-stream-name",
-        maxlen: 20_000]}, []}
+     {Brink.Producer.build_spec(
+       "redis://localhost:6796",
+       "redis-stream-name",
+       maxlen: 20_000
+      ), []}
    ])
 ```
 The Brink producer will first consume the data coming in from the Stream
@@ -49,11 +50,10 @@ from that data.
 ### Consumer
 ```elixir
 Flow.from_specs(
-  [{Brink.Consumer,
-    [name: :unique_process_name,
-     redis_uri: "redis://localhost:6796",
-     stream: "redis-stream-name",
-     mode: :single]}]
+  [Brink.Consumer.build_spec_single_mode(
+    "redis://localhost:6796",
+    "redis-stream-name",
+   )]
 )
 |> your_flow_functions
 |> Flow.start_link()

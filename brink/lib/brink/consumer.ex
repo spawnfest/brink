@@ -22,6 +22,33 @@ defmodule Brink.Consumer do
   for new events, to make sure that they are processed.
   """
 
+  @spec build_spec_single_mode(String.t(), String.t(), keyword()) :: {atom(), keyword()}
+  def build_spec_single_mode(redis_uri, stream, options \\ []) do
+    {
+      __MODULE__,
+      Keyword.merge(
+        options, 
+        [redis_uri: redis_uri,
+         stream: stream,
+         mode: :single]
+      )
+    }
+  end
+
+  @spec build_spec_group_mode(String.t(), String.t(), String.t(), keyword()) :: {atom(), keyword()}
+  def build_spec_group_mode(redis_uri, stream, group, options \\ []) do
+    {
+      __MODULE__,
+      Keyword.merge(
+        options, 
+        [redis_uri: redis_uri,
+         stream: stream,
+         group: group,
+         mode: :group]
+      )
+    }
+  end
+
   # Options
   # - :name, defaults to __MODULE__
   @spec start_link(keyword()) :: GenServer.on_start()
