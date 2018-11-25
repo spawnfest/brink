@@ -4,29 +4,39 @@ defmodule Brink.Producer do
   @moduledoc """
   Brink.Producer is a GenStage consumer that produces events to a Redis
   Stream. It can be used, with one or more processes, as a sink for
-  Flow.into_stages/Flow.into_specs .
+  Flow.into_stages/Flow.into_specs.
   """
 
-  # Options:
-  # - :name, defaults to __MODULE__
+  @doc """
+  Builds a child specification tuple intended to be used by Flow.into_specs or
+  Flow.into_stages.
+
+  ## Options
+  * `:name` - the name of the process. Defaults to `Brink.Producer`
+  * `:maxlen` - the maximum size of the underlying Redis stream, passed to the
+     `MAXLEN` option of the Redis `XADD` command. Defaults to `nil`, for no
+     maximum stream length.
+  """
+  @spec build_spec(String.t(), String.t(), keyword()) :: {atom(), keyword()}
+  def build_spec(redis_uri, stream, options \\ []) do
+    {__MODULE__, Keyword.merge(options, redis_uri: redis_uri, stream: stream)}
+  end
+
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(options \\ []) do
     GenStage.start_link(__MODULE__, options, name: Keyword.get(options, :name, __MODULE__))
   end
 
-  # Required:
-  # - :redis_uri
-  # - :stream
-  # - :maxlen
   def init(options \\ []) do
-      {:ok, redis_client} = Redix.start_link(Keyword.fetch!(options, :redis_uri))
-      state = %{
-        client: redis_client,
-        stream: Keyword.fetch!(options, :stream),
-        maxlen: Keyword.fetch!(options, :maxlen)
-      }
+    {:ok, redis_client} = Redix.start_link(Keyword.fetch!(options, :redis_uri))
 
-      {:consumer, state}
+    state = %{
+      client: redis_client,
+      stream: Keyword.fetch!(options, :stream),
+      maxlen: Keyword.get(options, :maxlen, nil)
+    }
+
+    {:consumer, state}
   end
 
   def terminate(_reason, state) do
@@ -59,6 +69,6 @@ defmodule Brink.Producer do
         []
       end
 
-    ["XADD", stream] ++ maxlen_args ++ ["*"] ++ dict_args
+    List.flatten(["XADD", stream, maxlen_args, "*", dict_args])
   end
 end

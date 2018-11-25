@@ -11,7 +11,7 @@ defmodule BrinkDemo.Producer do
       &%{now: DateTime.to_unix(DateTime.utc_now(), :millisecond), value: round(&1 * 10_000)}
     )
     |> Flow.into_specs([
-      {{Brink.Producer, [redis_uri: redis_uri, stream: stream, maxlen: 20_000]}, []}
+      {Brink.Producer.build_spec(redis_uri, stream, maxlen: 20_000), []}
     ])
   end
 end

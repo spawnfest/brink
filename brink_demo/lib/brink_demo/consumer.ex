@@ -9,20 +9,18 @@ defmodule BrinkDemo.Consumer do
 
     Flow.from_specs(
       [
-        {Brink.Consumer,
-         [
-           name: :"Blink.Producer-#{consumer}",
-           redis_uri: redis_uri,
-           stream: stream,
-           mode: :group,
-           group: group,
-           consumer: consumer
-         ]}
+        Brink.Consumer.build_spec_group_mode(
+          redis_uri,
+          stream,
+          group,
+          name: :"Brink.Producer-#{consumer}",
+          consumer: consumer
+        )
       ],
       window: Flow.Window.periodic(3, :second)
     )
     |> Flow.reduce(fn -> {0, 0, ""} end, fn {_id, %{now: now, value: value}},
-                                        {count, total_time, _time} ->
+                                            {count, total_time, _time} ->
       {count + 1, total_time + elem(Integer.parse(value), 0), now}
     end)
     |> Flow.on_trigger(fn {count, total_time, time}, partition ->
