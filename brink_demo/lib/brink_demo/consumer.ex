@@ -20,7 +20,7 @@ defmodule BrinkDemo.Consumer do
       window: Flow.Window.periodic(3, :second)
     )
     |> Flow.reduce(fn -> {0, 0, ""} end, fn {_id, %{now: now, value: value}},
-                                        {count, total_time, _time} ->
+                                            {count, total_time, _time} ->
       {count + 1, total_time + elem(Integer.parse(value), 0), now}
     end)
     |> Flow.on_trigger(fn {count, total_time, time}, partition ->

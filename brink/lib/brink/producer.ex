@@ -10,7 +10,7 @@ defmodule Brink.Producer do
   @doc """
   Builds a child specification tuple intended to be used by Flow.into_specs or
   Flow.into_stages.
-  
+
   ## Options
   * `:name` - the name of the process. Defaults to `Brink.Producer`
   * `:maxlen` - the maximum size of the underlying Redis stream, passed to the
@@ -19,7 +19,7 @@ defmodule Brink.Producer do
   """
   @spec build_spec(String.t(), String.t(), keyword()) :: {atom(), keyword()}
   def build_spec(redis_uri, stream, options \\ []) do
-    {__MODULE__, Keyword.merge(options, [redis_uri: redis_uri, stream: stream])}
+    {__MODULE__, Keyword.merge(options, redis_uri: redis_uri, stream: stream)}
   end
 
   @spec start_link(keyword()) :: GenServer.on_start()
@@ -28,14 +28,15 @@ defmodule Brink.Producer do
   end
 
   def init(options \\ []) do
-      {:ok, redis_client} = Redix.start_link(Keyword.fetch!(options, :redis_uri))
-      state = %{
-        client: redis_client,
-        stream: Keyword.fetch!(options, :stream),
-        maxlen: Keyword.get(options, :maxlen, nil)
-      }
+    {:ok, redis_client} = Redix.start_link(Keyword.fetch!(options, :redis_uri))
 
-      {:consumer, state}
+    state = %{
+      client: redis_client,
+      stream: Keyword.fetch!(options, :stream),
+      maxlen: Keyword.get(options, :maxlen, nil)
+    }
+
+    {:consumer, state}
   end
 
   def terminate(_reason, state) do
@@ -68,6 +69,6 @@ defmodule Brink.Producer do
         []
       end
 
-    List.flatten ["XADD", stream, maxlen_args, "*", dict_args]
+    List.flatten(["XADD", stream, maxlen_args, "*", dict_args])
   end
 end

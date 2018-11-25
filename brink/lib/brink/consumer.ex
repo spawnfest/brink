@@ -27,24 +27,25 @@ defmodule Brink.Consumer do
     {
       __MODULE__,
       Keyword.merge(
-        options, 
-        [redis_uri: redis_uri,
-         stream: stream,
-         mode: :single]
+        options,
+        redis_uri: redis_uri,
+        stream: stream,
+        mode: :single
       )
     }
   end
 
-  @spec build_spec_group_mode(String.t(), String.t(), String.t(), keyword()) :: {atom(), keyword()}
+  @spec build_spec_group_mode(String.t(), String.t(), String.t(), keyword()) ::
+          {atom(), keyword()}
   def build_spec_group_mode(redis_uri, stream, group, options \\ []) do
     {
       __MODULE__,
       Keyword.merge(
-        options, 
-        [redis_uri: redis_uri,
-         stream: stream,
-         group: group,
-         mode: :group]
+        options,
+        redis_uri: redis_uri,
+        stream: stream,
+        group: group,
+        mode: :group
       )
     }
   end
@@ -65,7 +66,6 @@ defmodule Brink.Consumer do
   def init(options \\ []) do
     mode = Keyword.get(options, :mode, :single)
 
-
     with {:ok, mode_state} <- parse_mode_options(mode, options) do
       stream = Keyword.fetch!(options, :stream)
       {:ok, client} = Redix.start_link(Keyword.fetch!(options, :redis_uri))
@@ -80,7 +80,7 @@ defmodule Brink.Consumer do
 
       if mode == :group do
         {:ok, msg} = create_group(client, stream, Keyword.fetch!(options, :group))
-        IO.puts msg
+        IO.puts(msg)
       end
 
       # {:producer, state, producer_options}
@@ -210,9 +210,13 @@ defmodule Brink.Consumer do
     case Redix.command(client, ["XGROUP", "CREATE", stream, group, "$", "MKSTREAM"]) do
       {:ok, _} ->
         {:ok, "Created consumer group #{group} for #{stream}"}
+
       {:error, %Redix.Error{message: "BUSYGROUP Consumer Group name already exists"}} ->
         {:ok, "Consumer group #{group} for #{stream} already exists"}
-      error -> error # Any unforseen error
+
+      # Any unforseen error
+      error ->
+        error
     end
   end
 
