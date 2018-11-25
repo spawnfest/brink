@@ -22,48 +22,42 @@ defmodule Brink.Consumer do
   for new events, to make sure that they are processed.
   """
 
+  # Options
+  # - :name, defaults to __MODULE__
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(options \\ []) do
     GenStage.start_link(__MODULE__, options, name: Keyword.get(options, :name, __MODULE__))
   end
 
+  # Required:
+  # - :redis_uri
+  # - :stream
+  # Options:
+  # - :poll_interval, defaults to 100
+  # - :mode, defaults to :single
   def init(options \\ []) do
-    redis_client =
-      case Keyword.get(options, :redis_client) do
-        nil ->
-          redis_uri = Keyword.get(options, :redis_uri, "redis://localhost")
-          {:ok, client} = Redix.start_link(redis_uri)
-          client
-
-        client ->
-          client
-      end
-
     mode = Keyword.get(options, :mode, :single)
 
-    with {:ok, stream} <- Keyword.fetch(options, :stream),
-         {:ok, mode_state} <- parse_mode_options(mode, options),
-         poll_interval <- Keyword.get(options, :poll_interval, 100) do
+    with {:ok, mode_state} <- parse_mode_options(mode, options) do
+
+      {:ok, redis_client} = Redix.start_link(Keyword.fetch!(options, :redis_uri))
       state = %{
         client: redis_client,
-        stream: stream,
+        stream: Keyword.fetch!(options, :stream),
         mode: mode,
         demand: 0,
-        poll_interval: poll_interval
+        poll_interval: Keyword.get(options, :poll_interval, 100)
       }
 
-      producer_options =
-        case Keyword.fetch(options, :dispatcher) do
-          {:ok, dispatcher} ->
-            [dispatcher: dispatcher]
-
-          _ ->
-            []
-        end
-
-      {:producer, Map.merge(state, mode_state), producer_options}
+      # {:producer, state, producer_options}
+      {:producer, Map.merge(state, mode_state), Keyword.take(options, [:dispatcher])}
     else
       _ -> {:stop, "invalid arguments"}
     end
+  end
+
+  def terminate(_reason, state) do
+    Redix.stop(state[:client])
   end
 
   defp parse_mode_options(:single, options) do
