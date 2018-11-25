@@ -7,34 +7,30 @@ defmodule Brink.Producer do
   Flow.into_stages/Flow.into_specs .
   """
 
+  # Options:
+  # - :name, defaults to __MODULE__
+  @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(options \\ []) do
     GenStage.start_link(__MODULE__, options, name: Keyword.get(options, :name, __MODULE__))
   end
 
+  # Required:
+  # - :redis_uri
+  # - :stream
+  # - :maxlen
   def init(options \\ []) do
-    redis_client =
-      case Keyword.get(options, :redis_client) do
-        nil ->
-          redis_uri = Keyword.get(options, :redis_uri, "redis://localhost")
-          {:ok, client} = Redix.start_link(redis_uri)
-          client
-
-        client ->
-          client
-      end
-
-    with {:ok, stream} <- Keyword.fetch(options, :stream),
-         maxlen <- Keyword.get(options, :maxlen) do
+      {:ok, redis_client} = Redix.start_link(Keyword.fetch!(options, :redis_uri))
       state = %{
         client: redis_client,
-        stream: stream,
-        maxlen: maxlen
+        stream: Keyword.fetch!(options, :stream),
+        maxlen: Keyword.fetch!(options, :maxlen)
       }
 
       {:consumer, state}
-    else
-      _ -> {:stop, "Missing arguments"}
-    end
+  end
+
+  def terminate(_reason, state) do
+    Redix.stop(state[:client])
   end
 
   # ignoring incoming messages to clear mailbox
