@@ -10,7 +10,7 @@ Brink sits in the middle of an event chain, between other producers and
 consumers.
 
 ```
-[Producer] --Elixir events--> [Brink (Redis Stream)] --Elixir events--> [Consumer]
+[Producer] -Elixir events-> [Brink Producer] -Redis Stream events-> [Heterogeneous Systems] -Redis Stream events-> [Brink Consumer] -Elixir events-> [Consumer]
 ```
 
 ## Installation
