@@ -17,7 +17,8 @@ consumers.
 To demonstrate the functionality of Brink, we have set up a demo application.
 There is one producer that periodically produces a set of random integers as
 events on a Redis Stream indefinitely. There are two consumers, named "alfred"
-and "bob", consuming the random integers and outputting them to the console.
+and "bob", consuming the random integers and outputting their count and average
+to the console.
 
 ## Usage
 Clone this repo, then run
