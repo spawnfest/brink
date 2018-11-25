@@ -38,16 +38,23 @@ defmodule Brink.Consumer do
   def init(options \\ []) do
     mode = Keyword.get(options, :mode, :single)
 
-    with {:ok, mode_state} <- parse_mode_options(mode, options) do
 
-      {:ok, redis_client} = Redix.start_link(Keyword.fetch!(options, :redis_uri))
+    with {:ok, mode_state} <- parse_mode_options(mode, options) do
+      stream = Keyword.fetch!(options, :stream)
+      {:ok, client} = Redix.start_link(Keyword.fetch!(options, :redis_uri))
+
       state = %{
-        client: redis_client,
-        stream: Keyword.fetch!(options, :stream),
+        client: client,
+        stream: stream,
         mode: mode,
         demand: 0,
         poll_interval: Keyword.get(options, :poll_interval, 100)
       }
+
+      if mode == :group do
+        {:ok, msg} = create_group(client, stream, Keyword.fetch!(options, :group))
+        IO.puts msg
+      end
 
       # {:producer, state, producer_options}
       {:producer, Map.merge(state, mode_state), Keyword.take(options, [:dispatcher])}
@@ -170,6 +177,16 @@ defmodule Brink.Consumer do
       state.stream,
       state.next_id
     ]
+  end
+
+  defp create_group(client, stream, group) do
+    case Redix.command(client, ["XGROUP", "CREATE", stream, group, "$", "MKSTREAM"]) do
+      {:ok, _} ->
+        {:ok, "Created consumer group #{group} for #{stream}"}
+      {:error, %Redix.Error{message: "BUSYGROUP Consumer Group name already exists"}} ->
+        {:ok, "Consumer group #{group} for #{stream} already exists"}
+      error -> error # Any unforseen error
+    end
   end
 
   defp pick_next_id(%{mode: :single, next_id: next_id}, []), do: next_id

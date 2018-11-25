@@ -7,10 +7,6 @@ defmodule BrinkDemo.Consumer do
     group = Keyword.fetch!(options, :group)
     consumer = Keyword.fetch!(options, :consumer)
 
-    {:ok, client} = Redix.start_link(redis_uri)
-    Redix.command(client, ["XGROUP", "CREATE", stream, group, "$", "MKSTREAM"])
-    Redix.stop(client)
-
     Flow.from_specs(
       [
         {Brink.Consumer,
